@@ -122,6 +122,7 @@ export const MatchDetailView: React.FC<MatchDetailViewProps> = ({
         {/* Top Hero Section */}
         <MatchHeroSection
           fixture={fixture}
+          details={matchDetails}
           onBack={onBack}
           onLeagueClick={onLeagueClick}
         />

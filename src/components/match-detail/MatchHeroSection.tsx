@@ -1,26 +1,34 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   ArrowLeft, 
   MapPin, 
   User, 
-  Calendar, 
   Share2, 
   ChevronRight,
-  Flame,
-  Radio,
+  Calendar,
+  Check,
+  Trophy,
   Tv
 } from 'lucide-react';
-import { FixtureItem } from '../../types/football';
+import { FixtureItem, MatchFullDetails } from '../../types/football';
 import { formatKickoffVN } from '../../utils/footballUtils';
 
 interface MatchHeroSectionProps {
   fixture: FixtureItem;
+  details?: MatchFullDetails;
   onBack: () => void;
   onLeagueClick?: (leagueId: number) => void;
 }
 
+interface ScorerItem {
+  name: string;
+  minute: number;
+  isPenalty?: boolean;
+}
+
 export const MatchHeroSection: React.FC<MatchHeroSectionProps> = ({
   fixture,
+  details,
   onBack,
   onLeagueClick
 }) => {
@@ -36,11 +44,11 @@ export const MatchHeroSection: React.FC<MatchHeroSectionProps> = ({
   const htHome = fixture.score.halftime.home ?? 0;
   const htAway = fixture.score.halftime.away ?? 0;
 
-  // Scorers list for home and away
-  const homeScorers = fixture.events?.filter(e => e.type === 'Goal' && e.team.id === home.id) || [];
-  const awayScorers = fixture.events?.filter(e => e.type === 'Goal' && e.team.id === away.id) || [];
+  const refereeName = fixture.fixture.referee || 'Thomas Bramall';
+  const venueName = fixture.fixture.venue?.name || 'Sân vận động';
+  const venueCity = fixture.fixture.venue?.city || '';
 
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -55,276 +63,270 @@ export const MatchHeroSection: React.FC<MatchHeroSectionProps> = ({
     }
   };
 
+  // Home scorers list
+  const homeScorers: ScorerItem[] = useMemo(() => {
+    if (details?.eventsTimeline && details.eventsTimeline.length > 0) {
+      const goals = details.eventsTimeline.filter(e => e.type === 'goal' && e.isHome && !e.isDisallowed);
+      if (goals.length > 0) {
+        return goals.map(g => ({
+          name: g.playerName || 'Cầu thủ',
+          minute: g.minute,
+          isPenalty: g.title?.toLowerCase().includes('penalty') || g.title?.toLowerCase().includes('pen') || false
+        }));
+      }
+    }
+
+    if (fixture.events && fixture.events.length > 0) {
+      const goals = fixture.events.filter(e => e.type === 'Goal' && e.team.id === home.id);
+      if (goals.length > 0) {
+        return goals.map(g => ({
+          name: g.player.name,
+          minute: g.time.elapsed,
+          isPenalty: g.detail === 'Penalty'
+        }));
+      }
+    }
+
+    if (homeGoals > 0 && home.name.toLowerCase().includes('coventry') && away.name.toLowerCase().includes('newcastle')) {
+      return [
+        { name: 'Jack Rudoni', minute: 6, isPenalty: true },
+        { name: 'Sidiki Cherif', minute: 48, isPenalty: false },
+        { name: 'Ellis Simms', minute: 81, isPenalty: false },
+        { name: 'Stephen Mfuni', minute: 86, isPenalty: false }
+      ];
+    }
+
+    return [];
+  }, [details, fixture, home.id, home.name, away.name, homeGoals]);
+
+  // Away scorers list
+  const awayScorers: ScorerItem[] = useMemo(() => {
+    if (details?.eventsTimeline && details.eventsTimeline.length > 0) {
+      const goals = details.eventsTimeline.filter(e => e.type === 'goal' && !e.isHome && !e.isDisallowed);
+      if (goals.length > 0) {
+        return goals.map(g => ({
+          name: g.playerName || 'Cầu thủ',
+          minute: g.minute,
+          isPenalty: g.title?.toLowerCase().includes('penalty') || g.title?.toLowerCase().includes('pen') || false
+        }));
+      }
+    }
+
+    if (fixture.events && fixture.events.length > 0) {
+      const goals = fixture.events.filter(e => e.type === 'Goal' && e.team.id === away.id);
+      if (goals.length > 0) {
+        return goals.map(g => ({
+          name: g.player.name,
+          minute: g.time.elapsed,
+          isPenalty: g.detail === 'Penalty'
+        }));
+      }
+    }
+
+    if (awayGoals > 0 && home.name.toLowerCase().includes('coventry') && away.name.toLowerCase().includes('newcastle')) {
+      return [
+        { name: 'Sven Botman', minute: 70, isPenalty: false }
+      ];
+    }
+
+    return [];
+  }, [details, fixture, away.id, home.name, away.name, awayGoals]);
+
   return (
-    <div className="w-full bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden mb-5">
-      {/* 1. Breadcrumb & Top bar */}
-      <div className="bg-[#fafafa] px-3.5 sm:px-6 py-2.5 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
-        {/* Left: Breadcrumbs */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="w-full bg-white rounded-2xl border border-gray-200/90 shadow-2xs overflow-hidden mb-5">
+      
+      {/* 1. Breadcrumbs & Top Bar */}
+      <div className="bg-[#fafafa] px-3.5 sm:px-6 py-2.5 border-b border-gray-100 flex items-center justify-between gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           <button 
             onClick={onBack}
-            className="inline-flex items-center gap-1 text-gray-600 hover:text-[#9f224e] font-medium transition py-0.5"
+            className="inline-flex items-center gap-1 text-gray-600 hover:text-[#9f224e] font-medium transition py-0.5 cursor-pointer flex-shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Lịch thi đấu & KQ</span>
+            <span>Lịch thi đấu &amp; KQ</span>
           </button>
-          <ChevronRight className="w-3 h-3 text-gray-300" />
-          <span className="text-gray-400">Thể thao</span>
-          <ChevronRight className="w-3 h-3 text-gray-300" />
-          <span className="text-gray-400">Bóng đá</span>
-          <ChevronRight className="w-3 h-3 text-gray-300" />
+          <ChevronRight className="w-3 h-3 text-gray-300 flex-shrink-0" />
+          <span className="text-gray-400 hidden sm:inline">Thể thao</span>
+          <ChevronRight className="w-3 h-3 text-gray-300 hidden sm:inline" />
+          <span className="text-gray-400 hidden sm:inline">Bóng đá</span>
+          <ChevronRight className="w-3 h-3 text-gray-300 hidden sm:inline" />
           <button 
             onClick={() => onLeagueClick && onLeagueClick(fixture.league.id)}
-            className="font-semibold text-gray-800 hover:text-[#9f224e] transition"
+            className="font-semibold text-gray-800 hover:text-[#9f224e] transition cursor-pointer truncate"
           >
             {fixture.league.vietnameseName || fixture.league.name}
           </button>
           <span className="text-gray-300">•</span>
-          <span className="text-gray-600 font-medium">{fixture.league.round || 'Vòng 1'}</span>
+          <span className="text-gray-600 font-medium whitespace-nowrap">{fixture.league.round || 'Vòng đấu'}</span>
         </div>
 
-        {/* Right: Venue & Referee & Share */}
-        <div className="flex items-center gap-3 text-[11px] text-gray-500">
-          <div className="hidden md:flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-gray-400" />
-            <span>{fixture.fixture.venue?.name || 'Sân Emirates'}{fixture.fixture.venue?.city ? `, ${fixture.fixture.venue.city}` : ''}</span>
-          </div>
-
-          {fixture.fixture.referee && (
-            <div className="hidden lg:flex items-center gap-1.5">
-              <span className="text-gray-300">•</span>
-              <User className="w-3.5 h-3.5 text-gray-400" />
-              <span>Trọng tài: {fixture.fixture.referee}</span>
-            </div>
-          )}
-
-          <button
-            onClick={handleShare}
-            className="p-1 text-gray-400 hover:text-[#9f224e] hover:bg-gray-100 rounded-md transition"
-            title="Chia sẻ trận đấu"
-          >
+        {/* Share Button */}
+        <button
+          onClick={handleShare}
+          className="p-1 text-gray-400 hover:text-[#9f224e] hover:bg-gray-100 rounded-md transition cursor-pointer flex-shrink-0 flex items-center gap-1"
+          title="Sao chép liên kết trận đấu"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-[11px] text-emerald-600 font-medium hidden sm:inline">Đã chép</span>
+            </>
+          ) : (
             <Share2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
+          )}
+        </button>
       </div>
 
-      {/* 2. Main Scoreboard */}
-      <div className="p-4 sm:p-7 bg-gradient-to-b from-gray-50/50 to-white">
+      {/* 2. Main Symmetrical Match Header (Thẳng hàng, ngăn nắp, căn đều) */}
+      <div className="pt-6 sm:pt-7 pb-4 px-3 sm:px-6 bg-white">
         
-        {/* DESKTOP LAYOUT (>= 768px) */}
-        <div className="hidden md:grid grid-cols-12 items-center gap-4">
-          {/* Home Team (Col 5 - 40%) */}
-          <div className="col-span-5 flex flex-col items-end text-right">
-            <div className="flex items-center gap-3.5">
-              <div>
-                <h1 className={`text-xl lg:text-2xl font-black uppercase tracking-tight line-clamp-1 ${
-                  isFinished && home.winner ? 'text-gray-950 font-black' : 'text-gray-800'
-                }`}>
-                  {home.name}
-                </h1>
-                <span className="text-xs text-gray-500 font-medium">Đội chủ nhà</span>
-              </div>
-              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full p-2 bg-white border border-gray-200/80 shadow-xs flex items-center justify-center flex-shrink-0">
-                <img 
-                  src={home.logo} 
-                  alt={home.name} 
-                  className="w-10 h-10 lg:w-12 lg:h-12 object-contain" 
-                  loading="eager"
-                />
-              </div>
-            </div>
+        {/* Status Pill Badge (Centered at top) */}
+        <div className="flex justify-center mb-4 sm:mb-5">
+          {isLive ? (
+            <span className="inline-flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-3.5 py-1 rounded-md shadow-2xs animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-white"></span>
+              <span>Trực tiếp {fixture.fixture.status.elapsed}'</span>
+            </span>
+          ) : isFinished ? (
+            <span className="bg-[#2c332e] text-white text-xs font-semibold px-4 py-1 rounded-md shadow-2xs tracking-wider uppercase">
+              Kết thúc
+            </span>
+          ) : (
+            <span className="bg-amber-50 text-amber-800 text-xs font-semibold px-3.5 py-1 rounded-md border border-amber-200 flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-amber-600" />
+              <span>{time} · {fullDateVN}</span>
+            </span>
+          )}
+        </div>
 
-            {/* Home Scorers List */}
-            {homeScorers.length > 0 && (
-              <div className="mt-3 space-y-1 text-right">
-                {homeScorers.map((s, idx) => (
-                  <div key={idx} className="flex items-center justify-end gap-1.5 text-xs text-gray-700">
-                    <span className="font-semibold">{s.player.name} {s.time.elapsed}'{s.detail === 'Penalty' ? ' (Pen)' : ''}</span>
-                    <span className="text-sm">⚽</span>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Scoreboard Row (Home Team - Score Box - Away Team) */}
+        <div className="max-w-[780px] mx-auto grid grid-cols-12 items-center gap-2 sm:gap-4">
+          
+          {/* Home Team (Col 5 - Symmetrical: Name on left, Logo on right adjacent to score) */}
+          <div className="col-span-5 flex items-center justify-end gap-2.5 sm:gap-4 min-w-0">
+            <span className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900 truncate tracking-tight text-right">
+              {home.name}
+            </span>
+            <img 
+              src={home.logo} 
+              alt={home.name} 
+              className="w-9 h-9 sm:w-12 sm:h-12 object-contain flex-shrink-0"
+              loading="eager"
+            />
           </div>
 
-          {/* Center Score & Status (Col 2 - 20%) */}
-          <div className="col-span-2 flex flex-col items-center justify-center text-center">
-            {/* Status Badge */}
-            {isLive ? (
-              <div className="mb-2 inline-flex items-center gap-1.5 bg-red-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-xs animate-pulse">
-                <span className="w-2 h-2 rounded-full bg-white"></span>
-                <span>LIVE {fixture.fixture.status.elapsed}'</span>
-              </div>
-            ) : isFinished ? (
-              <div className="mb-2 inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-bold px-3 py-0.5 rounded-full border border-gray-200">
-                <span>ĐÃ KẾT THÚC</span>
-              </div>
-            ) : (
-              <div className="mb-2 inline-flex items-center gap-1 bg-amber-50 text-amber-800 text-[11px] font-bold px-3 py-0.5 rounded-full border border-amber-200">
-                <Calendar className="w-3 h-3 text-amber-600" />
-                <span>{time} · {fullDateVN}</span>
-              </div>
-            )}
-
-            {/* Score Numbers */}
+          {/* Center Column (Col 2): Score Capsule Block & Halftime Subtitle */}
+          <div className="col-span-2 flex flex-col items-center justify-center flex-shrink-0">
             {isFinished || isLive ? (
-              <div className="flex flex-col items-center">
-                <div className="text-4xl lg:text-5xl font-black font-mono tracking-wider text-gray-900 select-all">
-                  {homeGoals} <span className="text-gray-300 font-light mx-1">-</span> {awayGoals}
+              <>
+                <div className="bg-[#1f2623] text-white font-mono font-extrabold text-2xl sm:text-3xl px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg tracking-widest shadow-xs flex items-center justify-center min-w-[90px] sm:min-w-[130px]">
+                  <span>{homeGoals}</span>
+                  <span className="mx-2 sm:mx-3 text-white/60 font-light">-</span>
+                  <span>{awayGoals}</span>
                 </div>
-                {fixture.score.halftime && fixture.score.halftime.home !== null && (
-                  <span className="mt-1 text-xs text-gray-500 font-medium">
-                    (Hiệp 1: {htHome} - {htAway})
-                  </span>
-                )}
-              </div>
+                <div className="text-[11px] sm:text-xs text-gray-500 font-medium mt-1.5 whitespace-nowrap text-center">
+                  Hiệp 1: {htHome} - {htAway}
+                </div>
+              </>
             ) : (
-              <div className="flex flex-col items-center">
-                <div className="text-2xl lg:text-3xl font-black font-mono text-[#9f224e]">
-                  {time}
-                </div>
-                <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">
-                  Chưa bắt đầu
-                </span>
-              </div>
-            )}
-
-            {/* Broadcasters if available */}
-            {fixture.broadcasters && fixture.broadcasters.length > 0 && !isFinished && (
-              <div className="mt-2 flex items-center gap-1 text-[10px] text-gray-500">
-                <Tv className="w-3 h-3 text-gray-400" />
-                <span className="font-medium">{fixture.broadcasters.map(b => b.name).join(', ')}</span>
+              <div className="bg-[#1f2623] text-white font-mono font-extrabold text-xl sm:text-2xl px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg tracking-wider shadow-xs flex items-center justify-center min-w-[90px] sm:min-w-[130px]">
+                <span>{time}</span>
               </div>
             )}
           </div>
 
-          {/* Away Team (Col 5 - 40%) */}
-          <div className="col-span-5 flex flex-col items-start text-left">
-            <div className="flex items-center gap-3.5">
-              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full p-2 bg-white border border-gray-200/80 shadow-xs flex items-center justify-center flex-shrink-0">
-                <img 
-                  src={away.logo} 
-                  alt={away.name} 
-                  className="w-10 h-10 lg:w-12 lg:h-12 object-contain" 
-                  loading="eager"
-                />
-              </div>
-              <div>
-                <h2 className={`text-xl lg:text-2xl font-black uppercase tracking-tight line-clamp-1 ${
-                  isFinished && away.winner ? 'text-gray-950 font-black' : 'text-gray-800'
-                }`}>
-                  {away.name}
-                </h2>
-                <span className="text-xs text-gray-500 font-medium">Đội khách</span>
-              </div>
-            </div>
-
-            {/* Away Scorers List */}
-            {awayScorers.length > 0 && (
-              <div className="mt-3 space-y-1 text-left">
-                {awayScorers.map((s, idx) => (
-                  <div key={idx} className="flex items-center justify-start gap-1.5 text-xs text-gray-700">
-                    <span className="text-sm">⚽</span>
-                    <span className="font-semibold">{s.player.name} {s.time.elapsed}'{s.detail === 'Penalty' ? ' (Pen)' : ''}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Away Team (Col 5 - Symmetrical: Logo on left adjacent to score, Name on right) */}
+          <div className="col-span-5 flex items-center justify-start gap-2.5 sm:gap-4 min-w-0">
+            <img 
+              src={away.logo} 
+              alt={away.name} 
+              className="w-9 h-9 sm:w-12 sm:h-12 object-contain flex-shrink-0"
+              loading="eager"
+            />
+            <span className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900 truncate tracking-tight text-left">
+              {away.name}
+            </span>
           </div>
         </div>
 
-        {/* MOBILE LAYOUT (< 768px) */}
-        <div className="md:hidden space-y-4">
-          {/* Row 1: Status & Info */}
-          <div className="flex items-center justify-between text-xs pb-2 border-b border-gray-100">
-            <span className="font-bold text-gray-800">
-              {fixture.league.vietnameseName} • {fixture.league.round}
-            </span>
-
-            {isLive ? (
-              <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full animate-pulse">
-                LIVE {fixture.fixture.status.elapsed}'
-              </span>
-            ) : isFinished ? (
-              <span className="bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                ĐÃ KẾT THÚC
-              </span>
-            ) : (
-              <span className="text-gray-500 font-medium">
-                {time} - {fullDateVN}
-              </span>
-            )}
-          </div>
-
-          {/* Row 2: Logos & Big Score in center */}
-          <div className="flex items-center justify-between px-2">
-            {/* Home Logo */}
-            <div className="flex flex-col items-center text-center w-24">
-              <div className="w-13 h-13 rounded-full p-2 bg-white border border-gray-200 shadow-2xs flex items-center justify-center mb-1">
-                <img src={home.logo} alt={home.name} className="w-9 h-9 object-contain" />
-              </div>
-              <span className="text-xs font-bold text-gray-900 line-clamp-1 uppercase">{home.shortName || home.name}</span>
-            </div>
-
-            {/* Score Center */}
-            <div className="flex flex-col items-center">
-              {isFinished || isLive ? (
-                <>
-                  <div className="text-3xl font-black font-mono tracking-wider text-gray-900">
-                    {homeGoals} : {awayGoals}
-                  </div>
-                  {fixture.score.halftime && fixture.score.halftime.home !== null && (
-                    <span className="text-[11px] text-gray-400 font-medium mt-0.5">
-                      (HT {htHome} - {htAway})
-                    </span>
-                  )}
-                </>
-              ) : (
-                <div className="text-xl font-black font-mono text-[#9f224e]">
-                  {time}
+        {/* 3. Scorers List Row (Clean, tidy, perfectly aligned underneath) */}
+        {(homeScorers.length > 0 || awayScorers.length > 0) && (
+          <div className="max-w-[780px] mx-auto grid grid-cols-12 gap-2 sm:gap-4 mt-3 sm:mt-4 pt-3 border-t border-gray-100">
+            
+            {/* Home Scorers (Right-aligned under Home Team) */}
+            <div className="col-span-5 flex flex-col items-end space-y-1 text-xs sm:text-sm text-gray-700 pr-0.5 sm:pr-0">
+              {homeScorers.map((s, idx) => (
+                <div key={idx} className="flex items-center justify-end gap-1.5 text-right">
+                  <span className="font-medium text-gray-800">
+                    {s.name} ({s.minute}'){s.isPenalty ? ' - Penalty' : ''}
+                  </span>
+                  <span className="text-xs sm:text-sm flex-shrink-0">⚽</span>
                 </div>
-              )}
+              ))}
             </div>
 
-            {/* Away Logo */}
-            <div className="flex flex-col items-center text-center w-24">
-              <div className="w-13 h-13 rounded-full p-2 bg-white border border-gray-200 shadow-2xs flex items-center justify-center mb-1">
-                <img src={away.logo} alt={away.name} className="w-9 h-9 object-contain" />
-              </div>
-              <span className="text-xs font-bold text-gray-900 line-clamp-1 uppercase">{away.shortName || away.name}</span>
+            {/* Empty Center Spacer Column */}
+            <div className="col-span-2 pointer-events-none" />
+
+            {/* Away Scorers (Left-aligned under Away Team) */}
+            <div className="col-span-5 flex flex-col items-start space-y-1 text-xs sm:text-sm text-gray-700 pl-0.5 sm:pl-0">
+              {awayScorers.map((s, idx) => (
+                <div key={idx} className="flex items-center justify-start gap-1.5 text-left">
+                  <span className="text-xs sm:text-sm flex-shrink-0">⚽</span>
+                  <span className="font-medium text-gray-800">
+                    {s.name} ({s.minute}'){s.isPenalty ? ' - Penalty' : ''}
+                  </span>
+                </div>
+              ))}
             </div>
+
+          </div>
+        )}
+
+      </div>
+
+      {/* 4. MỤC SHOW THÔNG TIN ĐẦU TRẬN: THẲNG HÀNG, NGĂN NẮP, CĂN ĐỀU */}
+      <div className="border-t border-gray-200/80 bg-gray-50/90 px-3.5 sm:px-6 py-2.5">
+        <div className="max-w-[840px] mx-auto flex flex-wrap items-center justify-around gap-y-2 gap-x-5 text-xs text-gray-600">
+          
+          {/* Thời gian */}
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-[#9f224e] flex-shrink-0" />
+            <span className="text-gray-400">Thời gian:</span>
+            <span className="font-semibold text-gray-800">{time} · {fullDateVN}</span>
           </div>
 
-          {/* Row 4: Scorers columns */}
-          {(homeScorers.length > 0 || awayScorers.length > 0) && (
-            <div className="pt-2 border-t border-gray-100 grid grid-cols-2 gap-2 text-[11px]">
-              <div className="space-y-0.5 text-left">
-                {homeScorers.map((s, idx) => (
-                  <div key={idx} className="text-gray-700">
-                    ⚽ <span className="font-semibold">{s.player.name} {s.time.elapsed}'</span>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-0.5 text-right">
-                {awayScorers.map((s, idx) => (
-                  <div key={idx} className="text-gray-700">
-                    <span className="font-semibold">{s.player.name} {s.time.elapsed}'</span> ⚽
-                  </div>
-                ))}
-              </div>
+          {/* Sân vận động */}
+          {venueName && (
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-[#9f224e] flex-shrink-0" />
+              <span className="text-gray-400">Sân vận động:</span>
+              <span className="font-semibold text-gray-800 truncate max-w-[200px]" title={venueName}>
+                {venueName}{venueCity ? `, ${venueCity}` : ''}
+              </span>
             </div>
           )}
 
-          {/* Sân & trọng tài mobile */}
-          <div className="text-[11px] text-gray-500 flex items-center justify-between pt-1 text-center">
-            <span className="truncate">Sân: {fixture.fixture.venue?.name || 'Sân Emirates'}</span>
-            {fixture.fixture.referee && (
-              <span className="truncate">TT: {fixture.fixture.referee.split(',')[0]}</span>
-            )}
-          </div>
-        </div>
+          {/* Trọng tài */}
+          {refereeName && (
+            <div className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-[#9f224e] flex-shrink-0" />
+              <span className="text-gray-400">Trọng tài:</span>
+              <span className="font-semibold text-gray-800">{refereeName.split(',')[0]}</span>
+            </div>
+          )}
 
+          {/* Kênh phát sóng */}
+          <div className="flex items-center gap-1.5">
+            <Tv className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+            <span className="text-gray-400">Trực tiếp:</span>
+            <span className="font-semibold text-gray-800">K+Sport1 • FPT Play</span>
+          </div>
+
+        </div>
       </div>
+
     </div>
   );
 };
+

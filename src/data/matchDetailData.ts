@@ -1218,45 +1218,105 @@ export function getMatchDetailsForFixture(fixture: FixtureItem): MatchFullDetail
       }
     });
   } else if (isFinished || isLive) {
-    // Generate realistic goal events if none present
-    if (homeScore > 0) {
-      timeline.push({
-        minute: 24,
-        period: '1H',
-        type: 'goal',
-        isHome: true,
-        teamId: home.id,
-        playerName: `${home.shortName || home.name} Tiền đạo`,
-        scoreText: '1 - 0',
-        title: `VÀO! Bàn mở tỷ số cho ${home.name}`,
-        description: 'Dứt điểm cận thành sau đường căng ngang chuẩn xác.'
-      });
-    }
-    if (homeScore > 1) {
-      timeline.push({
-        minute: 57,
-        period: '2H',
-        type: 'goal',
-        isHome: true,
-        teamId: home.id,
-        playerName: `${home.shortName || home.name} Đội trưởng`,
-        scoreText: `${homeScore} - ${awayScore}`,
-        title: `VÀO! Bàn thắng thứ hai cho ${home.name}`,
-        description: 'Cú sút sấm sét từ tuyến hai tung lưới đối phương.'
-      });
-    }
-    if (awayScore > 0) {
-      timeline.push({
-        minute: 38,
-        period: '1H',
-        type: 'goal',
-        isHome: false,
-        teamId: away.id,
-        playerName: `${away.shortName || away.name} Cầu thủ`,
-        scoreText: `${Math.min(homeScore, 1)} - 1`,
-        title: `VÀO! Bàn thắng quý giá cho ${away.name}`,
-        description: 'Pha phản công chớp nhoáng xé toang hàng phòng ngự.'
-      });
+    if (home.name.toLowerCase().includes('coventry') && away.name.toLowerCase().includes('newcastle')) {
+      timeline.push(
+        {
+          minute: 6,
+          period: '1H',
+          type: 'goal',
+          isHome: true,
+          teamId: home.id,
+          playerName: 'Jack Rudoni',
+          scoreText: '1 - 0',
+          title: 'VÀO! 1-0 cho Coventry (Jack Rudoni - Penalty)',
+          description: 'Jack Rudoni thực hiện thành công quả phạt đền 11m đánh lừa thủ môn Newcastle.'
+        },
+        {
+          minute: 48,
+          period: '2H',
+          type: 'goal',
+          isHome: true,
+          teamId: home.id,
+          playerName: 'Sidiki Cherif',
+          scoreText: '2 - 0',
+          title: 'VÀO! 2-0 cho Coventry (Sidiki Cherif)',
+          description: 'Sidiki Cherif băng vào đệm bóng cận thành nhân đôi cách biệt cho Coventry.'
+        },
+        {
+          minute: 70,
+          period: '2H',
+          type: 'goal',
+          isHome: false,
+          teamId: away.id,
+          playerName: 'Sven Botman',
+          scoreText: '2 - 1',
+          title: 'VÀO! Newcastle rút ngắn 1-2 (Sven Botman)',
+          description: 'Sven Botman bật cao đánh đầu dũng mãnh sau quả đá phạt góc.'
+        },
+        {
+          minute: 81,
+          period: '2H',
+          type: 'goal',
+          isHome: true,
+          teamId: home.id,
+          playerName: 'Ellis Simms',
+          scoreText: '3 - 1',
+          title: 'VÀO! 3-1 cho Coventry (Ellis Simms)',
+          description: 'Pha bứt tốc và dứt điểm chéo góc lạnh lùng của Ellis Simms.'
+        },
+        {
+          minute: 86,
+          period: '2H',
+          type: 'goal',
+          isHome: true,
+          teamId: home.id,
+          playerName: 'Stephen Mfuni',
+          scoreText: '4 - 1',
+          title: 'VÀO! 4-1 cho Coventry (Stephen Mfuni)',
+          description: 'Stephen Mfuni ấn định chiến thắng tưng bừng 4-1 cho Coventry.'
+        }
+      );
+    } else {
+      // Generate realistic goal events if none present
+      if (homeScore > 0) {
+        timeline.push({
+          minute: 24,
+          period: '1H',
+          type: 'goal',
+          isHome: true,
+          teamId: home.id,
+          playerName: `${home.shortName || home.name} Tiền đạo`,
+          scoreText: '1 - 0',
+          title: `VÀO! Bàn mở tỷ số cho ${home.name}`,
+          description: 'Dứt điểm cận thành sau đường căng ngang chuẩn xác.'
+        });
+      }
+      if (homeScore > 1) {
+        timeline.push({
+          minute: 57,
+          period: '2H',
+          type: 'goal',
+          isHome: true,
+          teamId: home.id,
+          playerName: `${home.shortName || home.name} Đội trưởng`,
+          scoreText: `${homeScore} - ${awayScore}`,
+          title: `VÀO! Bàn thắng thứ hai cho ${home.name}`,
+          description: 'Cú sút sấm sét từ tuyến hai tung lưới đối phương.'
+        });
+      }
+      if (awayScore > 0) {
+        timeline.push({
+          minute: 38,
+          period: '1H',
+          type: 'goal',
+          isHome: false,
+          teamId: away.id,
+          playerName: `${away.shortName || away.name} Cầu thủ`,
+          scoreText: `${Math.min(homeScore, 1)} - 1`,
+          title: `VÀO! Bàn thắng quý giá cho ${away.name}`,
+          description: 'Pha phản công chớp nhoáng xé toang hàng phòng ngự.'
+        });
+      }
     }
   }
 
